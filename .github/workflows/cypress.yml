@@ -13,7 +13,13 @@ jobs:
       - name: Checkout do Código
         uses: actions/checkout@v4
 
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
       - name: Executar Testes Cypress no Chrome
         uses: cypress-io/github-action@v6
         with:
           browser: chrome
+          build: npm run build # opcional, caso tenhas script de build
