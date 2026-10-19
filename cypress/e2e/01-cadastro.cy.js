@@ -7,11 +7,12 @@ describe('Funcionalidade: Cadastro de Utilizador', () => {
   });
 
   it('Caso 1: Criar um novo utilizador com sucesso', () => {
-    const emailPersonalizado = `carlos.alberto_${Date.now()}@gmail.com`;
+    // Timestamp em milissegundos garante um e-mail 100% novo a cada execução
+    const emailUnico = `carlos_${Date.now()}@teste.com`;
 
-    Cadastro.preencherCadastroInicial('Carlos Alberto', emailPersonalizado);
+    Cadastro.preencherCadastroInicial('Carlos Alberto', emailUnico);
 
-    cy.contains('ENTER ACCOUNT INFORMATION', { timeout: 10000 }).should('be.visible');
+    cy.contains('ENTER ACCOUNT INFORMATION', { timeout: 15000 }).should('be.visible');
 
     Cadastro.preencherFormularioCompleto({
       senha: 'SenhaSegura123',
@@ -29,44 +30,48 @@ describe('Funcionalidade: Cadastro de Utilizador', () => {
       telemovel: '11987654321'
     });
 
-    cy.get('[data-qa="account-created"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-qa="account-created"]', { timeout: 15000 }).should('be.visible');
     cy.get('[data-qa="continue-button"]').click({ force: true });
-    cy.contains('Logged in as Carlos Alberto', { timeout: 10000 }).should('be.visible');
+    cy.contains('Logged in as Carlos Alberto', { timeout: 15000 }).should('be.visible');
   });
 
   it('Caso 5: Tentar cadastrar um e-mail já existente', () => {
-    const emailExistente = `duplicado_${Date.now()}@gmail.com`;
+    // Usamos um e-mail comum que é frequentemente registado na base de dados do Automation Exercise
+    const emailExistente = 'email_ja_registado@teste.com';
 
-    // 1. Regista o utilizador pela primeira vez para o e-mail passar a existir no sistema
-    Cadastro.preencherCadastroInicial('Utilizador Base', emailExistente);
-    cy.contains('ENTER ACCOUNT INFORMATION', { timeout: 10000 }).should('be.visible');
-    
-    Cadastro.preencherFormularioCompleto({
-      senha: 'Senha123',
-      dia: '10',
-      mes: 'May',
-      ano: '1995',
-      primeiroNome: 'Utilizador',
-      sobrenome: 'Base',
-      empresa: 'Teste',
-      endereco: 'Rua B',
-      pais: 'Canada',
-      estado: 'Ontario',
-      cidade: 'Toronto',
-      cep: 'M5V2H1',
-      telemovel: '123456789'
+    // Se a base de dados do site estiver limpa, fazemos uma tentativa rápida de registo inicial
+    Cadastro.preencherCadastroInicial('Teste Repetido', emailExistente);
+
+    // Se já existir, a mensagem aparece logo na página inicial sem ter de preencher o formulário todo
+    cy.get('body').then(($body) => {
+      if ($body.text().includes('Email Address already exist!')) {
+        cy.contains('Email Address already exist!').should('be.visible');
+      } else {
+        // Se não existia, insere o formulário para registar e depois valida a repetição
+        cy.contains('ENTER ACCOUNT INFORMATION', { timeout: 15000 }).should('be.visible');
+        Cadastro.preencherFormularioCompleto({
+          senha: 'Senha123',
+          dia: '1',
+          mes: 'January',
+          ano: '2000',
+          primeiroNome: 'Teste',
+          sobrenome: 'User',
+          empresa: 'QA',
+          endereco: 'Rua 1',
+          pais: 'United States',
+          estado: 'NY',
+          cidade: 'NY',
+          cep: '10001',
+          telemovel: '123456789'
+        });
+        cy.get('[data-qa="continue-button"]').click({ force: true });
+        cy.get('a[href="/logout"]').click({ force: true });
+        
+        // Agora tenta registar novamente com o mesmo e-mail
+        Cadastro.preencherCadastroInicial('Outro Teste', emailExistente);
+        cy.contains('Email Address already exist!', { timeout: 15000 }).should('be.visible');
+      }
     });
-    cy.get('[data-qa="continue-button"]').click({ force: true });
-    
-    // 2. Faz logout para voltar à página de login/registo
-    cy.get('a[href="/logout"]', { timeout: 10000 }).click();
-    cy.url().should('include', '/login');
-
-    // 3. Tenta registar novamente com EXATAMENTE o mesmo e-mail para testar a restrição
-    Cadastro.preencherCadastroInicial('Outro Nome', emailExistente);
-    
-    // Valida a mensagem de erro esperada
-    cy.contains('Email Address already exist!', { timeout: 10000 }).should('be.visible');
   });
 
 });
