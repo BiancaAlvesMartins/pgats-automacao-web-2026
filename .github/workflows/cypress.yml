@@ -22,4 +22,4 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           browser: chrome
-          build: npm run build # opcional, caso tenhas script de build
+          record: false
